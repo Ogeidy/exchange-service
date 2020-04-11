@@ -1,11 +1,10 @@
-import sys
 import json
 import logging
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from urllib.parse import urlparse, parse_qs, parse_qsl
+from urllib.parse import urlparse, parse_qs
 
 from exchange_service import config
-from exchange_service.exchenge import exchange
+from exchange_service.exchange import exchange
 
 
 class ExchangeHandler(BaseHTTPRequestHandler):
@@ -15,14 +14,15 @@ class ExchangeHandler(BaseHTTPRequestHandler):
         if 'amount' not in params or 'from' not in params or 'to' not in params:
             response['status'] = 'fail'
             response['msg'] = 'Wrong parameters'
+            self.send_response(405)
         else:
             exchanged = exchange(amount=float(params['amount']),
                                     cur_from=params['from'],
                                     cur_to=params['to'])
             response['currency'] = params['to']
             response['amount'] = exchanged
+            self.send_response(200)
 
-        self.send_response(200)
         self.send_header('content-type', 'application/json')
         self.end_headers
         self.wfile.write(bytes(json.dumps(response), encoding='utf-8'))
@@ -30,9 +30,6 @@ class ExchangeHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         params = parse_qs(urlparse(self.path).query)
         params = {k:v[0] for k, v in params.items()}
-
-        logging.debug('params: %s' % params)
-
         self._process_exchenge(params)
     
     def do_POST(self):
@@ -43,9 +40,6 @@ class ExchangeHandler(BaseHTTPRequestHandler):
         except:
             self._process_exchenge({})
             return
-
-        logging.debug(json_data)
-
         self._process_exchenge(json_data)
 
     def log_message(self, format, *args):
