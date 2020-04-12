@@ -11,7 +11,10 @@ class ExchangeHandler(BaseHTTPRequestHandler):
 
     def _process_exchenge(self, params):
         response = {}
-        if 'amount' not in params or 'from' not in params or 'to' not in params:
+        if ('amount' not in params or 'from' not in params or 'to' not in params or
+                not str(params['amount']).isdigit() or
+                params['from'] not in ('USD', 'RUB') or
+                params['to'] not in ('USD', 'RUB')):
             response['status'] = 'fail'
             response['msg'] = 'Wrong parameters'
             self.send_response(405)
